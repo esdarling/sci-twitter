@@ -1,5 +1,5 @@
 #code sets
-RPROJ <- list(PROJHOME = normalizePath(getwd()))
+RPROJ <- list(PROJHOME = normalizePath(".."))
 attach(RPROJ)
 
 cat("sourcing Project-specific .Rprofile\n")
