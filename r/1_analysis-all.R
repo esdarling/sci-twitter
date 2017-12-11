@@ -15,7 +15,8 @@ library(readxl)
 library(textcat)
 library(cldr)
 
-
+citation("stringr")
+citation()
 ## =================
 # load 110 scientists info
 ## =================
