@@ -23,7 +23,25 @@ names(d)
 d$handle <- tolower(d$handle)
 unique(d$handle)
 
-#rename some NUVI typos..? 
+#summaries of 64,666 followers
+names(d)
+decision.makers <- d %>% 
+  filter(politician == 1) %>% 
+  distinct()
+head(decision.makers)
+nrow(decision.makers)
+
+191/64666
+
+decision.makers <- d %>% 
+  filter(politician == 1) %>% 
+  distinct()
+head(decision.makers)
+nrow(decision.makers)
+
+191/64666
+
+#rename some NUVI typos.. so they will match into scis110
 unique(d$handle)
 d$handle <- recode_factor(d$handle, 
                           "@ericsotka" = "@eriksotka", 
@@ -34,15 +52,23 @@ d$handle <- recode_factor(d$handle,
                           "@micheljikaiser" = "@micheljkaiser", 
                           "@jelmcglothlin" = "@joelmcglothlin")
 
+head(d)
+
+#manuscript summaries
+length(unique(d$Username)) #64,666 followers
+
 
 #load 110 users data
 scis110 <- read.csv(file.path(PROJHOME,"sci-twitter","data",
                               "110 handles_with Twitter dates.csv"),
                     header = TRUE, strip.white = TRUE, stringsAsFactors = FALSE)
-names(scis110)[2] <- "handle"
+names(scis110)
+names(scis110)[3] <- "handle"
 #puttolower to match data analysis
 scis110$handle <- tolower(scis110$handle)
+unique(scis110$handle)
 
+head(scis110)
 # 
 # filter(scis110, Followers > 5000)
 # 
@@ -51,116 +77,37 @@ scis110$handle <- tolower(scis110$handle)
 # hist(scis110$Year.joined)
 # 
 
-d2 <- d %>% 
+head(d)
+reach.110 <- d %>% 
     group_by(handle) %>% 
     summarize(median.reach = median(Reach, na.rm = TRUE),
     sum.reach = sum(Reach, na.rm = TRUE),
     max.reach = max(Reach, na.rm = TRUE))
+
+hist(reach.110$max.reach)
+summary(reach.110$max.reach)
+
+#d2 - reach by 64,666 handles
+names(d)
+d2 <- d %>% 
+  group_by(Username) %>% 
+  summarize(median.reach = median(Reach, na.rm = TRUE),
+            sum.reach = sum(Reach, na.rm = TRUE),
+            max.reach = max(Reach, na.rm = TRUE))
+
 head(d2)
 summary(d2)
+nrow(d2)
 
-levels(as.factor(d2$handle))
+hist(d2$max.reach)
+summary(d2$max.reach); sd(d2$max.reach) #0 to 6,716,665
 
-#check big reach numbers, yep, makes sense with 110 followers_long.xlsx
-#and summarized in new SOM table
-#filter(d, Reach > 4000000)
-scis110 <- left_join(scis110, d2)
-head(scis110)
-names(scis110)
+test <- filter(d2, max.reach > 5000000)
 
-#no reach should be NA - otherwise joining typos
-test <- filter(scis110, is.na(median.reach))
-names(scis110)
-
-reach.melt <- melt(scis110[,c(2,4,13,17:19)], id.vars = 1:3)
-head(reach.melt)
-summary(reach.melt)
-
-
-#plot of followers x total reach of Twitter academic
-reach.melt$variable <- factor(reach.melt$variable, 
-                              levels = c("median.reach",
-                                         "max.reach",
-                                         "sum.reach"))
-
-reach.melt$variable <- recode_factor(reach.melt$variable, 
-median.reach = "Median reach",
-max.reach = "Maximum reach",
-sum.reach = "Cumulative reach")
-
-facet_names <- c(`Median reach` = "Median reach (average quality)",
-                 `Maximum reach` = "Maximum reach (highest quality)",
-                 `Cumulative reach` = "Cumulative reach (sum of quality)")
-
-#plot - followers by reach
-head(reach.melt)
-ggplot(aes(x = Followers, y = value), data = reach.melt) + 
-      geom_point(size = 3, alpha = 0.75) + 
-      theme_bw(base_size = 14) + 
-      scale_x_log10(breaks = c(0,10,25,50,100,250,500,750,1000,
-      1500,2500,3500,5000,7500,10000)) +
-      scale_y_continuous(labels = comma) +
-      ylab("Twitter reach (follower's followers)") + 
-      xlab("No. of followers") +
-      stat_smooth(colour = "black", se = TRUE, fill = "grey50") + 
-      theme(axis.text.x = element_text(angle = 45, hjust=1, vjust=1),
-      text = element_text(size = 12),
-      panel.grid = element_blank()) +
-      facet_wrap(~variable, ncol = 1, scales = "free_y", 
-      labeller = as_labeller(facet_names))
-
-ggsave(file.path(PROJHOME,"paper","figures-tables", 
-                 "outputs",
-                 "followers x reach.pdf"),
-       height = 8, width = 5.5)
-
-#histogram of followers
-head(scis110)
-
-ggplot(data = scis110) + 
-      geom_histogram(aes(x = Followers), colour = "black", fill = "grey60",
-      boundary = 0) + 
-      scale_x_log10(breaks = c(0,10,25,50,100,250,500,750,1000,
-      1500,2500,3500,5000,7500,10000)) +
-      scale_y_continuous("Frequency", limits = c(0,13), expand = c(0,0),
-      breaks = c(0,5,10)) +
-      theme_bw(base_size = 20) +
-      theme(axis.text.x = element_text(angle = 45, hjust=1, vjust=1),
-      axis.ticks.x = element_blank(),
-      text = element_text(size = 12),
-      panel.grid = element_blank(),
-      plot.background = element_rect(fill = "transparent")) + 
-      annotate("text", label = "n = 110 academics", x = 3000, y = 12)
-
-ggsave(file.path(PROJHOME,"paper","figures-tables", "outputs",
-    "followers log-histogram.pdf"),
-    height = 3.15, width = 5.12)
-
-#histogram of reach of followers
-head(d)
-d.reach <- d %>% 
-    group_by(Username) %>% 
-    summarize(Reach = mean(Reach))
-    min(d.reach$Reach); max(d.reach$Reach)
-    median(d.reach$Reach); sd(d.reach$Reach)
-
-ggplot(data = d.reach) + 
-    geom_histogram(aes(x = Reach), colour = "black", fill = "grey60",
-    boundary = 0) + 
-    scale_x_log10(labels = comma,
-    breaks = c(10,100,1000,10000,100000,1000000)) +
-    scale_y_continuous("Frequency", limits = c(0,9000), expand = c(0,0)) + 
-    theme_bw(base_size = 14) +
-    theme(panel.grid = element_blank(),
-    plot.background = element_rect(fill = "transparent")) + 
-    annotate("text", label = "n = 64,666 followers", x = 900000, y = 7500)
-
-ggsave(file.path(PROJHOME,"paper","figures-tables", "outputs",
-    "reach log-histogram.pdf"),
-    height = 3.15, width = 10)
-
-#consider time and followers / reach
-#GO BACK TO MARKDOWN FILE 
+#Supplementary Figure 1
+ggplot(data = d2, aes(x = max.reach)) + 
+  geom_histogram() + 
+  scale_x_log10()
 
 #Next, I've calculated the average reach for the followers classified to each group. 
 #1. summarize groups for each handle, from d
@@ -169,26 +116,30 @@ names(d)
 d2 <- d %>% 
   select(c(2,4:5,20,7:17)) %>% 
   melt(id.vars = c(1:4), variable.name = "group") %>% 
-  filter(value > 0)
+  filter(value > 0) #filter only where groups are identified
 
 head(d2)
-head(d2[which(is.na(d2$group)),])
+head(d2[which(is.na(d2$group)),]) #all followers identified to a group - good :) 
 
 #64,666 unique followers
 length(unique(d2$Username))
 
 #remove foreign publics, unlikely to be properly classified
+#some foreign scientists already well classified :) 
 d2 <- d2[-which(d2$foreign == 1 & d2$group == "public"),]
 length(unique(d2$Username))
 62958/64666
+64666-62958
+1708/64666
 
 table(d2$group)
+192/64666 #politicians / decision makers
+
+head(scis110)
 
 #62,958 unique followers once foreign public (unclassified) profiles are removed
 length(unique(d2$Username)) 
 
-#plot reach histograms for each group
-head(d2)
 
 #recode outreach (educators + mza)
 d2$group <- recode_factor(d2$group, 
@@ -233,9 +184,30 @@ d2$group2 <- recode_factor(d2$group2,
                            unknown = "Unknown")
 levels(as.factor(d2$group2))
 
+## how many followers have more than one follower type? 
+head(d2)
+
+type.count <- d2 %>% 
+  filter(group != "Unknown") %>% 
+  group_by(Username, group) %>% 
+  tally() %>% 
+  ungroup() %>% 
+  group_by(Username) %>% 
+  summarize(n.group = n()) %>% 
+  arrange(desc(n.group))
+
+head(type.count)
+nrow(type.count)
+
+test <- filter(type.count, n.group >1)
+nrow(test) #1569 have multiple types
+1569 / 51625
+
 ## ==================================================
 #boxplots by group
 ## ==================================================
+
+##START HERE - STUCK
 head(d2)
 length(unique(d2$Username))
 
@@ -256,7 +228,7 @@ head(d3)
 levels(as.factor(d3$group))
 
 group.colours <- c("#E69F00","#E69F00","#E69F00","#E69F00",
-                   "yellow", "#009E73",
+                   "darkorchid1", "#009E73",
                    "dodgerblue","deepskyblue",
                    "navyblue","#999999")
 
@@ -267,6 +239,31 @@ group.colours.orig <- c("#0072B2","#0072B2","#0072B2","#0072B2",
 
 unique(d3$group)
 head(d3)
+
+#boxplots by group
+head(d3)
+str(d3)
+
+
+head(mpg)
+ggplot(data = mpg,
+       aes(x = class, y = hwy)) + 
+  geom_boxplot()
+
+unique(mpg$class)
+filter(mpg, class == "compact")
+
+
+unique(d3$group)
+str(d3)
+is.data.frame(d3)
+
+filter(d3, class == "Science faculty")
+
+ggplot(data = d3,
+       aes(x = as.factor(group), y = as.numeric(mean_reach))) + 
+  geom_boxplot()
+
 group.a <- ggplot(data = filter(d3,group != "Unknown"),
                   aes(x = reorder(group, prop_followers), y = mean_reach)) +
   geom_boxplot(aes(colour = group)) + 
@@ -321,7 +318,7 @@ d4 <- d2 %>%
 head(d4)
 
 levels(as.factor(d4$group2))
-group2.colours <- c("#E69F00", "yellow", "#009E73",
+group2.colours <- c("#E69F00", "darkorchid1", "#009E73",
                     "dodgerblue","deepskyblue","navyblue",
                     "#999999")
 
@@ -397,17 +394,21 @@ unique(d4$group2)
 data <- dplyr::filter(d4, group2 != "Unknown")
 model <- lm(data$mean_reach ~ data$group2)
 anova(model)
+oneway.test(data$mean_reach ~ data$group2)
+
 kruskal.test(data$mean_reach ~ data$group2)
 TukeyHSD(aov(data$mean_reach ~ data$group2))
 
 model <- lm(data$prop_followers ~ data$group2)
 anova(model)
+oneway.test(data$prop_followers ~ data$group2)
+
 kruskal.test(data$prop_followers ~ data$group2)
 TukeyHSD(aov(data$prop_followers ~ data$group2))
                                                                                                            ## ==================================================
 head(d2)
 length(unique(d2$Username))
-
+?anova
 
 
 ## ==================================================
@@ -440,7 +441,7 @@ ggplot(data = filter(d5, group != "Unknown"),
         text = element_text(family="Times"), 
         legend.key = element_blank(), #se = true is setting grey background of legend
         legend.background = element_blank()) + 
-  ylab("No. of group followers") +
+  ylab("No. of followers by type") +
   xlab("Total followers") +
   scale_size_continuous("Maximum \nreach", labels = comma)
 
