@@ -1,66 +1,65 @@
-library(dplyr)
-library(reshape2)
-library(gdata)
-library(stringr)
-library(ggplot2)
-library(ggrepel)
-library(RColorBrewer)
-library(vegan)
 
+#load DATA SOURCE
+library(here)
+source(here("r", "SOURCE_ANALYSIS.R"))
 
-## =================
-# load 110 follower info, summaries
-## =================
-d <- read.csv(file.path(PROJHOME,"sci-twitter","data",
-                        "output - all.data_7Dec2016.csv"),
-              header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
-names(d)
-head(d)
-d$handle <- tolower(d$handle)
-unique(d$handle)
+head(d.original) #original data 
+head(faculty.all.followers) #110 faculty with all their followers
+head(followers) #follower informatio -- removed foreign, melted data
+head(scis110) #scis110 faculty profile information
+head(d2) #faculty with classified followers for analysis
 
-d.summary <- d %>% 
-  select(Username, foreign, 
-         faculty:public) %>% 
-  #filter(foreign < 1) %>% 
-  distinct() %>% 
-  melt(id.vars = 1:2) %>% 
-  filter(value > 0)
+##Manuscript summaries in text
 
-head(d.summary)
-length(unique(d.summary$Username))
-table(d.summary$foreign)
+#Number of followers for each faculty
+head(faculty.all.followers)
 
-table(d.summary$variable)
-((64260-11359) / 64260) * 100
+count <- faculty.all.followers %>% 
+  group_by(handle) %>% 
+  tally()
 
-unique(d.summary$variable)
+head(count)
+summary(count$n); sd(count$n)
 
-head(d)
-d.distinct <- d %>% 
-  group_by(Username) %>%
-  summarize(mean.Reach = mean(Reach), 
-            foreign = max(foreign))
+#Reach of faculty
+reach.all <- d.original %>% 
+  select(Username, Reach) %>% 
+  group_by(Username) %>% 
+  summarize(Reach = max(Reach, na.rm = TRUE)) %>% 
+  distinct()
 
-table(d.distinct$foreign)
-summary(d.distinct$mean.Reach); sd(d.distinct$mean.Reach)
+summary(reach.all$Reach)
+length(unique(d.original$Username))
 
-head(d.distinct)
-table(d.distinct$foreign)
-length(unique(d.distinct$Username))
+faculty.all.followers <- left_join(faculty.all.followers, reach.all) %>% 
+  arrange(id)
+head(faculty.all.followers)
+summary(faculty.all.followers$Reach)
 
+filter(reach.all, Username == "@_oceanidas")
+filter(d.original, Username == "@_oceanidas")
 
+faculty.reach <- faculty.all.followers %>% 
+  group_by(handle) %>% 
+  summarize(n.followers = n(), 
+            median.follower.reach = median(Reach), 
+            max.follower.reach = max(Reach), 
+            cumulative.follower.reach = sum(Reach)) %>% 
+  arrange(n.followers)
+faculty.reach
+summary(faculty.reach) #good, no NAs in reach now
+sd(faculty.reach$cumulative.reach)
 
-#read scis110
-scis110 <- read.csv(file.path(PROJHOME,"sci-twitter","data",
-                              "110 handles_with Twitter dates.csv"),
-                    header = TRUE, strip.white = TRUE, stringsAsFactors = FALSE)
-names(scis110)[3] <- "handle"
-head(scis110)
-#puttolower to match data analysis
-scis110$handle <- tolower(scis110$handle)
+filter(faculty.reach, cumulative.follower.reach == 5470)
+#@bugdog_scott has the lowest reach 
+#he has 10 followers
+#his 10 followers have a total reach of 5470 (there are 5470 followers of his followers)
 
-head(scis110)
+PROJHOME
+write.csv(faculty.reach, file.path(PROJHOME, "paper", 
+                                   "figures-tables", "outputs", 
+                                   "Twitter reach summary for 110 faculty.csv"), 
+          row.names = FALSE)
 
 #GENDER
 table(scis110$Gender)

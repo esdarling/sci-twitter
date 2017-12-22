@@ -1,109 +1,189 @@
-library(dplyr)
-library(reshape2)
-library(stringr)
-library(ggplot2)
-library(ggrepel)
-library(RColorBrewer)
-library(vegan)
-library(readxl)
-library(grid)
-library(gtable)
-library(scales)
-library(gridExtra)
-library(extrafont)
 
-#-------------------------------------------------------------------------
-## Twitter followers analysis
+#load DATA SOURCE
+library(here)
+source(here("r", "SOURCE_ANALYSIS.R"))
 
-## load NUVI data
-d <- read.csv(file.path(PROJHOME,"sci-twitter","data",
-                        "output - all.data_7Dec2016.csv"),
-              header = TRUE, stringsAsFactors = FALSE, strip.white = TRUE)
-names(d)
-d$handle <- tolower(d$handle)
-unique(d$handle)
-
-#summaries of 64,666 followers
-names(d)
-decision.makers <- d %>% 
-  filter(politician == 1) %>% 
-  distinct()
-head(decision.makers)
-nrow(decision.makers)
-
-191/64666
-
-decision.makers <- d %>% 
-  filter(politician == 1) %>% 
-  distinct()
-head(decision.makers)
-nrow(decision.makers)
-
-191/64666
-
-#rename some NUVI typos.. so they will match into scis110
-unique(d$handle)
-d$handle <- recode_factor(d$handle, 
-                          "@ericsotka" = "@eriksotka", 
-                          "@thelibalib" = "@thelibalab", 
-                          "@ejmilnesgulland" = "@ejmilnergulland", 
-                          "@johnrhutchison"= "@johnrhutchinson", 
-                          "@bjeuquist"= "@bjenquist", 
-                          "@micheljikaiser" = "@micheljkaiser", 
-                          "@jelmcglothlin" = "@joelmcglothlin")
-
-head(d)
-
-#manuscript summaries
-length(unique(d$Username)) #64,666 followers
+head(d) #original data 
+head(faculty.all.followers) #110 faculty with all their followers
+head(followers) #follower informatio -- removed foreign, melted data
+head(scis110) #scis110 faculty profile information
+head(d2) #faculty with classified followers for analysis
 
 
-#load 110 users data
-scis110 <- read.csv(file.path(PROJHOME,"sci-twitter","data",
-                              "110 handles_with Twitter dates.csv"),
-                    header = TRUE, strip.white = TRUE, stringsAsFactors = FALSE)
-names(scis110)
-names(scis110)[3] <- "handle"
-#puttolower to match data analysis
-scis110$handle <- tolower(scis110$handle)
-unique(scis110$handle)
 
-head(scis110)
-# 
-# filter(scis110, Followers > 5000)
-# 
-# head(scis110)
-# hist(scis110$Months.total)
-# hist(scis110$Year.joined)
-# 
+#----------------------------------------------------------------------------------
+#FIGURES only include followers that are included in analysis
+#not foreign 
+#public duplicates removed
+#unknown group removed
+#leaves a total of 51,625 unique followers, each associated with a faculty handle
 
-head(d)
-reach.110 <- d %>% 
-    group_by(handle) %>% 
-    summarize(median.reach = median(Reach, na.rm = TRUE),
-    sum.reach = sum(Reach, na.rm = TRUE),
-    max.reach = max(Reach, na.rm = TRUE))
 
-hist(reach.110$max.reach)
-summary(reach.110$max.reach)
 
-#d2 - reach by 64,666 handles
-names(d)
-d2 <- d %>% 
-  group_by(Username) %>% 
-  summarize(median.reach = median(Reach, na.rm = TRUE),
-            sum.reach = sum(Reach, na.rm = TRUE),
-            max.reach = max(Reach, na.rm = TRUE))
+
+#FIGURE 2 
+
+#summarize prop. followers and reach statistics by follower type
+head(d2)
+length(unique(d2$Username))
+unique(d2$group2) #Unknown group removed from analysis
+length(unique(d2$Username)) #51,625 profiles
+
+nrow(d2) #53,216 rows, includes #1591 duplicated profiles
+nrow(d2) - length(unique(d2$Username))
 
 head(d2)
-summary(d2)
-nrow(d2)
 
-hist(d2$max.reach)
-summary(d2$max.reach); sd(d2$max.reach) #0 to 6,716,665
 
-test <- filter(d2, max.reach > 5000000)
+#calculate some summary statistics by reach
+head(d2)
+d2.reach <- d2 %>% 
+  group_by(group2) %>% 
+  summarize(n = n(),
+            median.reach = median(Reach),
+            max.reach = max(Reach)) %>% 
+  arrange(desc(n))
+d2.reach
 
+write.csv(d2.reach, 
+          file.path(PROJHOME,"paper","figures-tables", "outputs",
+                    "reach summary by type.csv"), 
+          row.names = FALSE)
+
+#filter(d, Username == "@jebyrnes")
+sum(d2.reach$n)
+
+
+
+
+
+#Profiles with more than one group
+sum(d2.reach$n) #53,216 total followers
+(53216 - 51625) / 51625 * 100
+
+
+
+
+#check follower numbers
+sum(d2.reach$n) #53216 
+length(unique(d2$Username)) 
+64575 - 62958 #1617 is difference - multiple profiles! 
+
+head(d2)
+
+
+#----------------------------------------------------------------------------------
+#Fig 2 - differences in reach by group
+oneway.test(d2$Reach ~ d2$group2)
+
+group2.colours <- c("#E69F00", "darkorchid1", "#009E73",
+                    "dodgerblue","deepskyblue","navyblue",
+                    "#999999")
+
+#create dummy facet of prop followers and reach 
+d2.reach.summary <- d2 %>% 
+  group_by(group2) %>% 
+  summarize(y0 = min(Reach),
+            y25 = quantile(Reach, 0.25),
+            y50 = median(Reach),
+            y75 = quantile(Reach, 0.75),
+            y100 = max(Reach))
+d2.reach.summary
+
+ggplot(data = d2.reach.summary, aes(x = group2)) +
+  geom_boxplot(aes(ymin = y0, lower = y25, 
+                   middle = y50, 
+                   upper = y75, ymax = y100),
+    stat = "identity")
+
+head(d2)
+
+
+test <- d2[1:5000,]
+head(test)
+str(test)
+ggplot(data = d2[1:5000,],
+       aes(x = as.factor(group2), y = as.numeric(Reach))) +
+  geom_violin()
+  
+
+
+  
+ggplot(data = d2,
+       aes(x = group2, y = Reach)) + 
+  geom_point(aes(colour = group2)) + 
+  geom_boxplot(aes(colour = group2))
+
+hist(d2$Reach)
+boxplot(d2$Reach~ d2$group2)
+
+
++ 
+  scale_colour_manual(values = group2.colours) + 
+  scale_y_log10(labels = comma,
+                breaks = c(10,100,1000,10000,100000,1000000)) +
+  theme_bw(base_size = 18) + 
+  theme(panel.grid = element_blank(),
+        legend.position = "none",
+        text=element_text(family="Times"),
+        axis.text.x = element_text(size = 18, angle = 45, hjust=1, vjust=1),
+        axis.title.x = element_blank()) + 
+  ylab("Median Twitter reach")
+
+#mean reach by group, averaged across 110 handles
+group2.b <- ggplot(data = filter(d4, group2 != "Unknown"), 
+                   aes(x = reorder(group2, -prop_followers), y = prop_followers)) +
+  geom_boxplot(aes(colour = group2)) + 
+  scale_colour_manual(values = group2.colours) +
+  scale_y_continuous(limits = c(0,0.8)) + 
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "transparent"),
+        legend.position = "none",
+        text=element_text(family="Times"),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),) + 
+  ylab("Mean proportion of followers") 
+
+
+g <- arrangeGrob(rbind(ggplotGrob(group2.b), ggplotGrob(group2.a), size = "last"))
+ggsave(file.path(PROJHOME,"paper","figures-tables", "outputs",
+                 "Fig3 - boxplot proportion, reach x group.pdf"), g,
+       height = 8, width = 6)
+
+
+#histograms of reach by group
+unique(d2$group)
+ggplot(data = dplyr::filter(d2, group != "Unknown")) + 
+  geom_histogram(aes(x = Reach, fill = group), colour = "black",
+                 boundary = 0) + 
+  scale_x_log10(labels = comma,
+                breaks = c(10,100,1000,10000,100000,1000000)) +
+  theme_bw(base_size = 14) +
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "transparent"),
+        axis.text.x = element_text(angle = 45, hjust=1, vjust=1),
+        legend.position = "none") + 
+  facet_wrap(~group, ncol = 3, scales = "free_y") + 
+  scale_fill_manual(values = group.colours) +
+  ylab("Frequency") + 
+  xlab("Twitter reach")
+
+ggsave(file.path(PROJHOME,"paper","figures-tables","outputs",
+                 "reach x group log-histogram.pdf"),
+       height = 6, width = 8)
+
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------
 #Supplementary Figure 1
 ggplot(data = d2, aes(x = max.reach)) + 
   geom_histogram() + 
@@ -123,22 +203,6 @@ head(d2[which(is.na(d2$group)),]) #all followers identified to a group - good :)
 
 #64,666 unique followers
 length(unique(d2$Username))
-
-#remove foreign publics, unlikely to be properly classified
-#some foreign scientists already well classified :) 
-d2 <- d2[-which(d2$foreign == 1 & d2$group == "public"),]
-length(unique(d2$Username))
-62958/64666
-64666-62958
-1708/64666
-
-table(d2$group)
-192/64666 #politicians / decision makers
-
-head(scis110)
-
-#62,958 unique followers once foreign public (unclassified) profiles are removed
-length(unique(d2$Username)) 
 
 
 #recode outreach (educators + mza)
@@ -238,31 +302,27 @@ group.colours.orig <- c("#0072B2","#0072B2","#0072B2","#0072B2",
                         "#999999")
 
 unique(d3$group)
-head(d3)
 
 #boxplots by group
-head(d3)
-str(d3)
-
-
 head(mpg)
 ggplot(data = mpg,
        aes(x = class, y = hwy)) + 
   geom_boxplot()
 
-unique(mpg$class)
-filter(mpg, class == "compact")
+##START HERE
+head(d2)
+nrow(d2)
 
-
-unique(d3$group)
-str(d3)
-is.data.frame(d3)
-
-filter(d3, class == "Science faculty")
-
-ggplot(data = d3,
-       aes(x = as.factor(group), y = as.numeric(mean_reach))) + 
-  geom_boxplot()
+d2.distinct <- d2 %>% 
+  group_by(group2, Username) %>% 
+  summarize(max.reach = max(Reach))
+head(d2.distinct)
+  
+ggplot(data = filter(d2.distinct, group2 != "Unknown"),
+       aes(x = reorder(group2, -max.reach, median), y = max.reach)) + 
+  geom_boxplot() +
+  scale_y_log10(labels = comma,
+                breaks = c(10,100,1000,10000,100000,1000000))
 
 group.a <- ggplot(data = filter(d3,group != "Unknown"),
                   aes(x = reorder(group, prop_followers), y = mean_reach)) +
