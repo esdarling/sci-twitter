@@ -62,9 +62,28 @@ write.csv(faculty.reach, file.path(PROJHOME, "paper",
                                    "Twitter reach summary for 110 faculty.csv"), 
           row.names = FALSE)
 
+## -------------------------------------------------------------------------------------
 #GENDER
 table(scis110$Gender)
 
+## -------------------------------------------------------------------------------------
+#gender analysis
+head(scis110)
+names(scis110)
+
+#is there a difference in tweeting activity by gender? 
+m0 <- lm(log10(Tweets) ~ Gender * Months.total, data = scis110)
+anova(m0)
+plot(m0)
+
+#is there a difference in followers by gender? 
+m1 <- lm(log10(Followers) ~ Gender * Months.total, data = scis110)
+anova(m1)
+plot(m1)
+
+
+
+## -------------------------------------------------------------------------------------
 #POSITION
 head(scis110)
 table(scis110$Level)
