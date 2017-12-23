@@ -48,7 +48,7 @@ faculty.reach <- faculty.all.followers %>%
   arrange(n.followers)
 faculty.reach
 summary(faculty.reach) #good, no NAs in reach now
-sd(faculty.reach$cumulative.reach)
+sd(faculty.reach$cumulative.follower.reach)
 
 filter(faculty.reach, cumulative.follower.reach == 5470)
 #@bugdog_scott has the lowest reach 
@@ -56,6 +56,7 @@ filter(faculty.reach, cumulative.follower.reach == 5470)
 #his 10 followers have a total reach of 5470 (there are 5470 followers of his followers)
 
 PROJHOME
+
 write.csv(faculty.reach, file.path(PROJHOME, "paper", 
                                    "figures-tables", "outputs", 
                                    "Twitter reach summary for 110 faculty.csv"), 
@@ -71,10 +72,20 @@ table(scis110$Level)
 27/110
 50/110
 
-
 #UNIVERSITIES
 unique(scis110$University)
 unique(scis110$Country)
+
+country.supp <- scis110 %>% 
+  group_by(Country) %>% 
+  tally() %>% 
+  arrange(desc(n))
+country.supp
+
+write.csv(country.supp, 
+          file.path(PROJHOME,"paper","figures-tables", "outputs",
+                    "Supp table - country by academics.csv"), 
+          row.names = FALSE)
 
 #FOLLOWERS
 hist(scis110$Followers)
@@ -89,3 +100,22 @@ subset(scis110, Followers > 5000)
 head(scis110)
 hist(scis110$Months.total)
 hist(scis110$Year.joined)
+
+#SUMMARY For SUPPLEMENTARY TABLE 1
+names(scis110)
+
+supp <- scis110 %>% 
+  select(handle, Followers, Name, University, Gender, Level) %>% 
+  arrange(Followers) %>% 
+  select(-c(Followers))
+supp
+
+faculty.supp <- left_join(faculty.reach, supp) %>% 
+  select(handle, Name:Level, 
+         n.followers:cumulative.follower.reach)
+head(faculty.supp)
+
+write.csv(faculty.supp, 
+          file.path(PROJHOME,"paper","figures-tables", "outputs",
+                    "Supp table - 110 scis info.csv"), 
+          row.names = FALSE)
