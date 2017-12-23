@@ -4,6 +4,9 @@ library(RColorBrewer)
 library(grid)
 library(extrafont)
 library(here)
+library(scales)
+library(patchwork)
+library(gridExtra)
 
 #-------------------------------------------------------------------------
 #load and update packages
@@ -227,6 +230,16 @@ length(unique(followers$Username))
 
 d2 <- inner_join(faculty.all.followers[,-4], followers, by = "Username")
 head(d2)
-length(unique(d2$Username))         
+length(unique(d2$Username))  
+
+#adjust levels
+levels(as.factor(d2$group2))
+d2$group2 <- factor(d2$group2, 
+                    levels = c("Scientists", "Public", "Media",
+                               "Applied", "Outreach", "Decision makers"))
+
+followers$group2 <- factor(followers$group2, 
+                           levels = c("Scientists", "Public", "Media",
+                                      "Applied", "Outreach", "Decision makers"))
 
 
