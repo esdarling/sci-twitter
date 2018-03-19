@@ -76,10 +76,31 @@ m0 <- lm(log10(Tweets) ~ Gender * Months.total, data = scis110)
 anova(m0)
 plot(m0)
 
+q <- residuals(m0)
+hist(q)
+
+m0.raw <- lm(Tweets ~ Gender * Months.total, data = scis110)
+anova(m0.raw)
+plot(m0.raw)
+
+library(stargazer)
+test <- anova(m0.raw)
+stargazer(as.matrix(test), type = "html")
+?stargazer
+getwd()
+
+q.raw <- residuals(m0.raw)
+hist(q.raw)
+
+
 #is there a difference in followers by gender? 
 m1 <- lm(log10(Followers) ~ Gender * Months.total, data = scis110)
 anova(m1)
 plot(m1)
+
+m1.raw <- lm(Followers ~ Gender * Months.total, data = scis110)
+anova(m1.raw)
+
 
 
 

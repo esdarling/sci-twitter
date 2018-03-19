@@ -164,7 +164,7 @@ ggplot(data = d3, aes(x = Followers, y = n.type), group = group2) +
   # stat_smooth(aes(colour = group2),
   #             method = "lm", fullrange = TRUE,
   #             formula = y ~ poly(x, 2)) +
-  stat_smooth(aes(colour = group2),
+  stat_smooth(aes(colour = group2, linetype = group2),
               se = FALSE, fullrange = TRUE) + #method = LOESS
   geom_point(shape = 21, 
              aes(colour = group2, fill = group2, size = max.Reach), 
@@ -173,11 +173,15 @@ ggplot(data = d3, aes(x = Followers, y = n.type), group = group2) +
   scale_x_log10(breaks = c(10,100,500,1000,2500,5000,10000)) +
   scale_y_continuous(breaks = c(0,1000,2000,3000)) +
   scale_colour_manual("Type", values = cbbPalette) +
+  scale_linetype_manual("Type", values = c("solid", "dashed",
+                                           "dotted", "dotdash",
+                                           "longdash", "twodash")) +
   scale_fill_manual("Type", values = cbbPalette) +
   theme(panel.grid = element_blank(),
         text = element_text(family="Times"), 
         legend.key = element_blank(), #se = true is setting grey background of legend
-        legend.background = element_blank()) + 
+        legend.background = element_blank(), 
+        legend.position = "right") + 
   ylab("No. of followers by type") +
   xlab("Total followers") +
   scale_size("Maximum \nreach", labels = comma, 
@@ -195,12 +199,15 @@ ggplot(data = d3, aes(x = Followers, y = n.type), group = group2) +
   geom_point(shape = 21, 
              aes(colour = group2, fill = group2, size = max.Reach), 
              alpha = 0.15) +
-  stat_smooth(aes(colour = group2),
+  stat_smooth(aes(colour = group2, linetype = group2),
               se = FALSE, fullrange = TRUE) + #method = LOESS
   theme_bw(base_size = 12) + 
   scale_x_log10(breaks = c(10,100,1000,5000)) +
   scale_colour_manual("Type", values = cbbPalette) +
   scale_fill_manual("Type", values = cbbPalette) +
+  scale_linetype_manual("Type", values = c("solid", "dashed",
+                                           "dotted", "dotdash",
+                                           "longdash", "twodash")) +
   theme(panel.grid = element_blank(),
         text = element_text(family="Times"), 
         legend.key = element_blank(), #se = true is setting grey background of legend
